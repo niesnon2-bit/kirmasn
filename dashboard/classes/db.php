@@ -48,8 +48,20 @@
 
     }
 
+    /** للاستعمال من الأبناء عند الحاجة لـ PDO مباشرة (أقل عرضة لأخطاء الـ stmt المشترك) */
+    protected function pdo(): PDO
+    {
+      if ($this->dbh === null) {
+        throw new RuntimeException('Database not connected: ' . ($this->error ?: 'unknown'));
+      }
+      return $this->dbh;
+    }
+
     public function query($query)
     {
+      if ($this->dbh === null) {
+        throw new RuntimeException('Database not connected: ' . ($this->error ?: 'unknown'));
+      }
       $this->stmt = $this->dbh->prepare($query);
     }
 
@@ -127,3 +139,4 @@
       return $this->stmt->debugDumpParams();
     }
   }
+
