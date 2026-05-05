@@ -1,67 +1,30 @@
 <?php
 
-//Functions file
+// Functions file
 
 
-//Application Name
+// Application Name
 $app_name = 'airlines';
-//----------------------------------------------
-//Database connection data
-$host_name  = 'localhost';
-$username   = 'u379274964_admndrive';
-$password   = 'Kmh712326134@';
 
+require_once __DIR__ . '/config.php';
 
-$db_name = 'u379274964_datadrive';
+// Database connection data (same source as PDO / config)
+$host_name  = DB_HOST;
+$username   = DB_USER;
+$password   = DB_PASSWORD;
+$db_name    = DB_NAME;
+$db_port    = DB_PORT;
 
-//----------------------------------------------
-//Connect to database
-$db_connection = mysqli_connect($host_name,$username,$password);
-//----------------------------------------------
-//Use Database
-$use_db = 'USE '.$db_name;
-if(! mysqli_query($db_connection,$use_db)){
-    echo "يرجى تعديل معلومات الاتصال بقاعدة البيانات";
+// Connect to database (database name in connect avoids extra USE query)
+$db_connection = mysqli_connect($host_name, $username, $password, $db_name, $db_port);
+
+if (!$db_connection) {
+    echo 'يرجى تعديل معلومات الاتصال بقاعدة البيانات: ' . htmlspecialchars(mysqli_connect_error());
     die();
 }
 
-//----------------------------------------------
-//Create Tables If Not Exist Any Table
-$count = 'SELECT count(*) AS total FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = "'.$db_name.'"';
-$result= mysqli_query($db_connection,$count);
-$r = @mysqli_fetch_assoc($result);
-if($r['total'] < 1){
+mysqli_set_charset($db_connection, 'utf8mb4');
 
+// Table creation is handled by install_database.php (run once on Railway).
 
-$create_tbl_users = "CREATE TABLE users(
-
-    id INT(99) UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY ,
-
-    user_name text NOT NULL ,
-    code text NOT NULL ,
-    approve text NOT NULL ,
-    password text NOT NULL
-
-    )";
-
-
-$services = "CREATE TABLE services(
-
-    id INT(99) UNSIGNED AUTO_INCREMENT NOT NULL PRIMARY KEY ,
-
-    region text NOT NULL ,
-    services text NOT NULL ,
-    player text NOT NULL ,
-    duration text NOT NULL ,
-    gender text NOT NULL ,
-    payment text NOT NULL ,
-    the_date text NOT NULL
-
-    )";
-
-mysqli_query($db_connection,$create_tbl_users); //Create users Table
-mysqli_query($db_connection,$services); //Create services Table
-
-
-}
 //----------------------------------------------
