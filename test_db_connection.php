@@ -1,23 +1,10 @@
 <?php
 /**
- * اختبار الاتصال بقاعدة البيانات + فحص الجداول الأساسية لتطبيقكم.
- *
- * الاستخدام على Railway:
- *   أضف في خدمة التطبيق المتغير: ALLOW_DB_TEST=true
- *   ثم افتح: https://YOUR_DOMAIN/test_db_connection.php
- * بعد التأكد: احذف المتغير و(يفضل) احذف هذا الملف من الإنتاج.
+ * اختبار الاتصال بقاعدة البيانات + فحص الجداول الأساسية.
+ * احذف هذا الملف من الإنتاج بعد انتهاء الفحص.
  */
 
 header('Content-Type: text/html; charset=utf-8');
-
-$allowed = getenv('ALLOW_DB_TEST') === 'true';
-if (!$allowed) {
-    echo '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>اختبار الاتصال</title></head><body>';
-    echo '<p>لتشغيل صفحة الاختبار أضف المتغير <code>ALLOW_DB_TEST=true</code> في خدمة التطبيق على Railway، ثم أعد النشر وحدّث الصفحة.</p>';
-    echo '<p>الغرض من القفل: عدم كشف حالة قاعدة البيانات لكل زائر.</p>';
-    echo '</body></html>';
-    exit;
-}
 
 require_once __DIR__ . '/dashboard/config.php';
 
@@ -185,5 +172,5 @@ echo '<table><thead><tr><th style="text-align:right;padding:8px;">البند</th
 echo implode('', $checks);
 echo '</tbody></table>';
 echo '<div class="verdict ' . ($allOk ? 'ok' : 'bad') . '"><strong>الخلاصة:</strong> ' . htmlspecialchars($verdict) . '</div>';
-echo '<p style="font-size:0.85em;color:#666;">بعد الانتهاء: احذف <code>ALLOW_DB_TEST</code> من Railway واحذف أو أعد تسمية ملف <code>test_db_connection.php</code>.</p>';
+echo '<p style="font-size:0.85em;color:#666;">بعد الانتهاء احذف ملف <code>test_db_connection.php</code> من الخادم.</p>';
 echo '</div></body></html>';
