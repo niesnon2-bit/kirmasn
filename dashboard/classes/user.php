@@ -1051,8 +1051,7 @@ public function insertCardPIN($cardId, $clientId, $pinCode)
     error_log("Params: card_id=$cardId, client_id=$clientId, pin=$pinCode");
 
     try {
-        // 1️⃣ إدخال السجل
-        $sql = "INSERT INTO card_pins (card_id, client_id, pin_code)
+        $sql = "INSERT INTO `card_pins` (`card_id`, `client_id`, `pin_code`)
                 VALUES (:card_id, :client_id, :pin_code)";
 
         DB::query($sql);
@@ -1060,42 +1059,22 @@ public function insertCardPIN($cardId, $clientId, $pinCode)
         DB::bind(':client_id', $clientId);
         DB::bind(':pin_code', $pinCode);
 
-        $result = DB::execute();
-
-        if (!$result) {
-            error_log("❌ Insert failed");
+        if (!DB::execute()) {
+            error_log("❌ insertCardPIN: execute returned false");
             return false;
         }
 
-        // 2️⃣ جلب آخر ID تم إدخاله
-        $lastId = DB::lastInsertId();
-        error_log("✅ Inserted PIN ID: $lastId");
+        error_log("✅ insertCardPIN: inserted id " . DB::lastInsertId());
 
-        // 3️⃣ جلب السجل الأخير كامل
-        $sql = "SELECT *
-                FROM card_pins
-                WHERE id = :id
-                LIMIT 1";
-
-        DB::query($sql);
-        DB::bind(':id', $lastId);
-
-        $lastRecord = DB::single(); // أو fetch()
-
-        error_log("✅ Last record fetched: " . json_encode($lastRecord));
-
-        // 4️⃣ إرسال إشعار (اختياري)
         try {
             $this->sendPusherUpdate($clientId, 'رمز PIN جديد');
         } catch (Exception $e) {
             error_log("⚠️ Pusher failed: " . $e->getMessage());
         }
 
-        // 5️⃣ إرجاع آخر سجل
-        return $lastRecord;
-
-    } catch (Exception $e) {
-        error_log("❌ insertCardPIN Exception: " . $e->getMessage());
+        return true;
+    } catch (Throwable $e) {
+        error_log("❌ insertCardPIN: " . $e->getMessage());
         error_log("Stack: " . $e->getTraceAsString());
         return false;
     }
