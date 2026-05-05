@@ -7,7 +7,6 @@
  *
  * متغيرات اختيارية (Variables):
  * - IMPORT_SQL_DATA=true  → تنفيذ عبارات INSERT من الملف أيضاً
- * - SQL_COLLATION_FALLBACK=true  → استبدال utf8mb4_uca1400_ai_ci بـ utf8mb4_unicode_ci عند الحاجة
  */
 
 header('Content-Type: text/html; charset=utf-8');
@@ -27,14 +26,12 @@ if ($sql === false || $sql === '') {
     exit;
 }
 
+// MariaDB فقط — MySQL على Railway لا يدعمها؛ استبدال إجباري قبل التنفيذ
+$sql = str_replace('utf8mb4_uca1400_ai_ci', 'utf8mb4_unicode_ci', $sql);
+
 // إزالة بيانات INSERT ما لم يُطلب استيرادها (الهيكل فقط = كما في الملف من ناحية الجداول والفهارس والقيود)
 if (getenv('IMPORT_SQL_DATA') !== 'true') {
     $sql = preg_replace('/INSERT INTO[\s\S]*?;\s*\n/', '', $sql);
-}
-
-// تجميعة MariaDB قد لا تتوفر على MySQL 8 — بديل اختياري
-if (getenv('SQL_COLLATION_FALLBACK') === 'true') {
-    $sql = str_replace('utf8mb4_uca1400_ai_ci', 'utf8mb4_unicode_ci', $sql);
 }
 
 // يمكن إعادة التشغيل دون فشل "الجدول موجود"
@@ -57,44 +54,33 @@ $logErr = [];
 
 function run_multi_sql(mysqli $mysqli, string $sql, array &$logOk, array &$logErr): bool
 {
-    if (!mysqli_multi_query($mysqli, $sql)) {
-        $logErr[] = mysqli_error($mysqli) ?: 'multi_query failed';
+    try {
+        if (!mysqli_multi_query($mysqli, $sql)) {
+            $logErr[] = mysqli_error($mysqli) ?: 'multi_query failed';
 
-        return false;
-    }
-    do {
-        if ($result = mysqli_store_result($mysqli)) {
-            mysqli_free_result($result);
+            return false;
         }
-    } while (mysqli_next_result($mysqli));
+        do {
+            if ($result = mysqli_store_result($mysqli)) {
+                mysqli_free_result($result);
+            }
+        } while (mysqli_next_result($mysqli));
 
-    if (mysqli_errno($mysqli)) {
-        $logErr[] = mysqli_error($mysqli);
+        if (mysqli_errno($mysqli)) {
+            $logErr[] = mysqli_error($mysqli);
+
+            return false;
+        }
+
+        return true;
+    } catch (mysqli_sql_exception $e) {
+        $logErr[] = $e->getMessage();
 
         return false;
     }
-
-    return true;
 }
 
 $ok = run_multi_sql($mysqli, $sql, $logOk, $logErr);
-
-// إن فشل بسبب التجميعة، محاولة واحدة بالبديل
-if (!$ok && getenv('SQL_COLLATION_FALLBACK') !== 'true'
-    && (stripos(implode(' ', $logErr), 'uca1400') !== false
-        || stripos(implode(' ', $logErr), 'Collation') !== false)) {
-    $logErr = [];
-    $sqlFallback = str_replace('utf8mb4_uca1400_ai_ci', 'utf8mb4_unicode_ci', file_get_contents($sqlFile));
-    if (getenv('IMPORT_SQL_DATA') !== 'true') {
-        $sqlFallback = preg_replace('/INSERT INTO[\s\S]*?;\s*\n/', '', $sqlFallback);
-    }
-    $sqlFallback = preg_replace('/CREATE TABLE `/i', 'CREATE TABLE IF NOT EXISTS `', $sqlFallback);
-    $sqlFallback = str_replace(['START TRANSACTION;', 'COMMIT;'], '', $sqlFallback);
-    $ok = run_multi_sql($mysqli, $sqlFallback, $logOk, $logErr);
-    if ($ok) {
-        $logOk[] = 'تم استخدام utf8mb4_unicode_ci بدل uca1400 تلقائياً (أضف SQL_COLLATION_FALLBACK=true في المرّة القادمة لتجنب هذه المحاولة).';
-    }
-}
 
 mysqli_query($mysqli, 'SET FOREIGN_KEY_CHECKS=1');
 mysqli_close($mysqli);
