@@ -127,6 +127,3 @@
       return $this->stmt->debugDumpParams();
     }
   }
-
-
-?>
