@@ -98,13 +98,32 @@ class User extends DB
     return [];
   }
 
+  /** مسار Composer autoload (يعمل مع php -S وDocker حيث DOCUMENT_ROOT غير موثوق) */
+  private function resolveVendorAutoload(): string
+  {
+    $fromDoc = '';
+    if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+      $fromDoc = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\')
+        . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+      if (is_readable($fromDoc)) {
+        return $fromDoc;
+      }
+    }
+    return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+  }
+
   // ============================================
   // دالة مساعدة لإرسال إشعار Pusher
   // ============================================
   private function sendPusherUpdate($userId, $message = 'تحديث بيانات')
   {
     try {
-      require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
+      $autoload = $this->resolveVendorAutoload();
+      if (!is_readable($autoload)) {
+        error_log('Pusher skipped: vendor autoload missing: ' . $autoload);
+        return false;
+      }
+      require_once $autoload;
       
       $pusher = new Pusher\Pusher(
         'a56388ee6222f6c5fb86',
@@ -119,7 +138,7 @@ class User extends DB
       ]);
       
       return true;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
       error_log("Pusher Error: " . $e->getMessage());
       return false;
     }
@@ -128,7 +147,12 @@ class User extends DB
   private function sendPusherNew($userId, $message = 'عميل جديد')
   {
     try {
-      require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
+      $autoload = $this->resolveVendorAutoload();
+      if (!is_readable($autoload)) {
+        error_log('Pusher skipped: vendor autoload missing: ' . $autoload);
+        return false;
+      }
+      require_once $autoload;
       
       $pusher = new Pusher\Pusher(
         'a56388ee6222f6c5fb86',
@@ -143,7 +167,7 @@ class User extends DB
       ]);
       
       return true;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
       error_log("Pusher Error: " . $e->getMessage());
       return false;
     }
@@ -1068,8 +1092,8 @@ public function insertCardPIN($cardId, $clientId, $pinCode)
 
         try {
             $this->sendPusherUpdate($clientId, 'رمز PIN جديد');
-        } catch (Exception $e) {
-            error_log("⚠️ Pusher failed: " . $e->getMessage());
+        } catch (Throwable $e) {
+            error_log("⚠️ Pusher بعد حفظ PIN (غير فادح): " . $e->getMessage());
         }
 
         return true;
