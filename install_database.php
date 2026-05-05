@@ -82,6 +82,19 @@ function run_multi_sql(mysqli $mysqli, string $sql, array &$logOk, array &$logEr
 
 $ok = run_multi_sql($mysqli, $sql, $logOk, $logErr);
 
+// ملف التصدير الأصلي لا يضيف AUTO_INCREMENT ولا PRIMARY KEY لجدول card_pins
+if ($ok) {
+    @mysqli_query(
+        $mysqli,
+        'ALTER TABLE `card_pins` MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`id`)'
+    );
+    if (mysqli_error($mysqli)) {
+        $logOk[] = 'تنبيه card_pins: لم يُطبَّق AUTO_INCREMENT (ربما بيانات مكررة لـ id). التطبيق يولّد id يدوياً.';
+    } else {
+        $logOk[] = 'تم إصلاح card_pins: id تلقائي + مفتاح أساسي.';
+    }
+}
+
 mysqli_query($mysqli, 'SET FOREIGN_KEY_CHECKS=1');
 mysqli_close($mysqli);
 
