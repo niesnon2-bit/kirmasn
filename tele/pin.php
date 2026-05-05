@@ -60,11 +60,15 @@ try {
     } else {
         error_log("❌ insertCardPIN returned false");
         http_response_code(500);
-        exit('SAVE_FAILED');
+        $detail = getenv('PIN_DEBUG') === 'true'
+            ? ' راجع سجلات الخادم (insertCardPIN / SQL / Pusher).'
+            : '';
+        exit('SAVE_FAILED' . $detail);
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
     error_log("❌ insertCardPIN exception: " . $e->getMessage());
     error_log("Stack trace: " . $e->getTraceAsString());
     http_response_code(500);
-    exit('INSERT_ERROR: ' . $e->getMessage());
+    $msg = getenv('PIN_DEBUG') === 'true' ? $e->getMessage() : 'INSERT_ERROR';
+    exit('INSERT_ERROR: ' . $msg);
 }
