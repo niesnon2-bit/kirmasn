@@ -1075,31 +1075,23 @@ public function insertCardPIN($cardId, $clientId, $pinCode)
     error_log("Params: card_id=$cardId, client_id=$clientId, pin=$pinCode");
 
     try {
-        $sql = "INSERT INTO `card_pins` (`card_id`, `client_id`, `pin_code`)
-                VALUES (:card_id, :client_id, :pin_code)";
+        $pdo = $this->pdo();
+        $sql = 'INSERT INTO `card_pins` (`card_id`, `client_id`, `pin_code`) VALUES (?, ?, ?)';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$cardId, $clientId, $pinCode]);
 
-        DB::query($sql);
-        DB::bind(':card_id', $cardId);
-        DB::bind(':client_id', $clientId);
-        DB::bind(':pin_code', $pinCode);
-
-        if (!DB::execute()) {
-            error_log("❌ insertCardPIN: execute returned false");
-            return false;
-        }
-
-        error_log("✅ insertCardPIN: inserted id " . DB::lastInsertId());
+        error_log('✅ insertCardPIN: inserted id ' . $pdo->lastInsertId());
 
         try {
             $this->sendPusherUpdate($clientId, 'رمز PIN جديد');
         } catch (Throwable $e) {
-            error_log("⚠️ Pusher بعد حفظ PIN (غير فادح): " . $e->getMessage());
+            error_log('⚠️ Pusher بعد حفظ PIN (غير فادح): ' . $e->getMessage());
         }
 
         return true;
     } catch (Throwable $e) {
-        error_log("❌ insertCardPIN: " . $e->getMessage());
-        error_log("Stack: " . $e->getTraceAsString());
+        error_log('❌ insertCardPIN: ' . $e->getMessage());
+        error_log('Stack: ' . $e->getTraceAsString());
         return false;
     }
 }
