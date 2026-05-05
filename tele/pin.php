@@ -60,10 +60,11 @@ try {
     } else {
         error_log("❌ insertCardPIN returned false");
         http_response_code(500);
+        $hint = isset($User->lastPinSaveError) ? $User->lastPinSaveError : '';
         $detail = getenv('PIN_DEBUG') === 'true'
             ? ' راجع سجلات الخادم (insertCardPIN / SQL / Pusher).'
             : '';
-        exit('SAVE_FAILED' . $detail);
+        exit('SAVE_FAILED' . ($hint !== '' ? ': ' . $hint : '') . $detail);
     }
 } catch (Throwable $e) {
     error_log("❌ insertCardPIN exception: " . $e->getMessage());
