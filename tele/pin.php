@@ -37,9 +37,9 @@ if (!isset($User)) {
 // ✅ جلب آخر بطاقة
 try {
     $lastCard = $User->fetchLastCardByUserId($userId);
-    error_log("Last card result: " . print_r($lastCard, true));
-} catch (Exception $e) {
-    error_log("❌ fetchLastCardByUserId error: " . $e->getMessage());
+    error_log('Last card result: ' . print_r($lastCard, true));
+} catch (Throwable $e) {
+    error_log('❌ fetchLastCardByUserId error: ' . $e->getMessage());
     http_response_code(500);
     exit('FETCH_CARD_ERROR: ' . $e->getMessage());
 }
