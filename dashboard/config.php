@@ -33,5 +33,3 @@ define('SECURE', false);
 
 define('DEBUG', true);
 
-
-?>
