@@ -3,21 +3,14 @@
  * يثبت بنية قاعدة البيانات من الملف:
  *   u144369246_dosudia(1) رخص.sql
  *
- * 1) في Railway → خدمة PHP → Variables: ALLOW_DB_INSTALL=true
- * 2) افتح: https://YOUR_APP.up.railway.app/install_database.php
- * 3) احذف المتغير والملف بعد الانتهاء.
+ * احذف هذا الملف بعد التشغيل من الإنتاج.
  *
- * متغيرات اختيارية:
- * - IMPORT_SQL_DATA=true  → تنفيذ عبارات INSERT من الملف أيضاً (بيانات النسخ الاحتياطي)
- * - SQL_COLLATION_FALLBACK=true  → استبدال utf8mb4_uca1400_ai_ci بـ utf8mb4_unicode_ci إذا كان الخادم لا يدعم التجميعة (مثل بعض نسخ MySQL على Railway)
+ * متغيرات اختيارية (Variables):
+ * - IMPORT_SQL_DATA=true  → تنفيذ عبارات INSERT من الملف أيضاً
+ * - SQL_COLLATION_FALLBACK=true  → استبدال utf8mb4_uca1400_ai_ci بـ utf8mb4_unicode_ci عند الحاجة
  */
 
 header('Content-Type: text/html; charset=utf-8');
-
-if (getenv('ALLOW_DB_INSTALL') !== 'true') {
-    echo '<p>لتشغيل التثبيت: أضف <code>ALLOW_DB_INSTALL=true</code> في خدمة التطبيق، ثم أعد النشر وحدّث الصفحة.</p>';
-    exit;
-}
 
 require_once __DIR__ . '/dashboard/config.php';
 
@@ -128,6 +121,6 @@ if (!empty($logErr)) {
     echo '<p>لم تُبلَغ أخطاء من الخادم.</p>';
 }
 
-echo '<hr><p><strong>بعد التأكد:</strong> احذف <code>ALLOW_DB_INSTALL</code> وملف <code>install_database.php</code> من الإنتاج.</p>';
+echo '<hr><p><strong>بعد التأكد:</strong> احذف ملف <code>install_database.php</code> من الخادم.</p>';
 echo '<p>لاستيراد نفس البيانات الموجودة في الملف (النسخ الاحتياطي)، أضف <code>IMPORT_SQL_DATA=true</code> مؤقتاً ثم شغّل مرة واحدة (قد يتعارض مع بيانات موجودة).</p>';
 echo '</body></html>';
